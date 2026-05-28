@@ -1,8 +1,10 @@
-def saludar():
-    return "Hola Mundo"
+from flask import Flask
 
-def sumar(a, b):
-    return a + b
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    return "Hola, bienvenido al TP de Integracion Continua"
 
 if __name__ == "__main__":
-    print(saludar())
+    app.run(host='0.0.0.0', port=5000)
