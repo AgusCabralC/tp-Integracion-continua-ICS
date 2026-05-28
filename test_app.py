@@ -15,6 +15,6 @@ class TestMiAplicacionWeb(unittest.TestCase):
     def test_home_contenido(self):
         # Verifica que el texto que muestra la pagina contenga el mensaje nuevo
         respuesta = self.cliente.get('/')
-        self.assertIn("Hola, probando", respuesta.data.decode('utf-8'))
+        self.assertIn("Hola, intentando", respuesta.data.decode('utf-8'))
 if __name__ == '__main__':
     unittest.main()
