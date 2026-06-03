@@ -51,10 +51,10 @@ jobs:
         python -m unittest test_app.py
 
     - name: Mover tarjeta en Trello a LISTO
-      if: success()
+      if: success() && (github.ref_name == 'main' || github.ref_name == 'master')
       run: |
         # 1. Buscamos el ID real de la tarjeta usando su número secuencial
         CARD_ID=$(curl -s "https://api.trello.com/1/boards/6a207672ad34d75b8b66142b/cards?key=${{ secrets.TRELLO_API_KEY }}&token=${{ secrets.TRELLO_TOKEN }}" | jq -r ".[] | select(.idShort == ${{ steps.extraer_tarjeta.outputs.trello_card_num }}) | .id")
         
-        # 2. La movemos a la lista de Listo (terminada en 1483)
+        # 2. La movemos a la lista de Listo
         curl -s -X PUT -d "idList=6a207672ad34d75b8b661483" "https://api.trello.com/1/cards/$CARD_ID?key=${{ secrets.TRELLO_API_KEY }}&token=${{ secrets.TRELLO_TOKEN }}"
