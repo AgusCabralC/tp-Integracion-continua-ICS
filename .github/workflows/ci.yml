@@ -22,24 +22,27 @@ jobs:
     - name: Extraer numero de tarjeta de Trello
       id: extraer_tarjeta
       run: |
-        # 1. Intentamos sacar el número de la rama o del historial reciente
+        # 1. Juntamos el nombre de la rama y los últimos 10 commits para buscar ahí
         TEXTO_BUSQUEDA="${{ github.ref_name }} $(git log -10 --oneline)"
+        
+        
+        # ignora mayusculas, guiones o espacios entre tarjeta y el número
         NUMERO=$(echo "$TEXTO_BUSQUEDA" | grep -oPi 'tarjeta[- ]?\K\d+' | head -n 1 || echo "")
         
-        # 2. Si no encuentra el patrón, busca cualquier número aislado en los commits
+        # Si no encuentra esa palabra, busca cualquier número aislado en los últimos commits
         if [ -z "$NUMERO" ]; then
           NUMERO=$(echo "$TEXTO_BUSQUEDA" | grep -oP '\b\d+\b' | head -n 1 || echo "")
         fi
 
-        # 3. Plan de contingencia para que la simulación en main no falle nunca
+        # Si está vacío, el pipeline SE ROMPE y avisa el motivo
         if [ -z "$NUMERO" ]; then
-          echo "Aviso: No se detectó patrón explícito. Usando tarjeta 2 por defecto."
-          NUMERO="2"
+          echo "ERROR nombrar con tarjeta(<numero>) en tus commits."
+          exit 1
         fi
 
         echo "El número de tarjeta detectado es: $NUMERO"
         echo "trello_card_num=$NUMERO" >> $GITHUB_OUTPUT
-    
+
     - name: Mover tarjeta en Trello a EN PROGRESO
       run: |
         # 1. Buscamos el ID real de la tarjeta en el tablero usando su número secuencial (idShort)
