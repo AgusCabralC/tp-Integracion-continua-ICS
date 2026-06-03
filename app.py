@@ -1,10 +1,13 @@
 from flask import Flask
 
-app = Flask(__name__)
+# Creo el servidor web
+servidor_tp = Flask(__name__)
 
-@app.route('/')
-def home():
-    return "Hola, probando el despliegue automatico en Render, yuju!!"
+@servidor_tp.route('/')
+def pagina_principal():
+    # Mensaje que se va a mostrar en la pantalla
+    return "Servidor de Gestión anda correctamente"
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=5000)
+    #puerto que ocupo
+    servidor_tp.run(host='0.0.0.0', port=5000)
