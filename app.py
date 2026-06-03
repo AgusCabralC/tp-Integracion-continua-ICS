@@ -6,7 +6,7 @@ servidor_tp = Flask(__name__)
 @servidor_tp.route('/')
 def pagina_principal():
     # Mensaje que se va a mostrar en la pantalla
-    return "Servidor de Gestión anda correctamente"
+    return "Servidor de Gestión anda correctamente "
 
 if __name__ == "__main__":
     #puerto que ocupo
