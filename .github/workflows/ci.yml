@@ -22,8 +22,27 @@ jobs:
     - name: Extraer numero de tarjeta de Trello
       id: extraer_tarjeta
       run: |
+        # 1. Intentamos sacar el número del nombre de la rama actual
         RAMA="${{ github.ref_name }}"
-        NUMERO=$(echo "$RAMA" | grep -oP 'tarjeta-\K\d+')
+        NUMERO=$(echo "$RAMA" | grep -oP 'tarjeta-\K\d+' || echo "")
+        
+        #2. Si no estaba en la rama porque estamos en main busca en el mensaje del último commit.
+        if [ -z "$NUMERO" ]; then
+          MESSAGE=$(git log -1 --pretty=%B)
+          NUMERO=$(echo "$MESSAGE" | grep -oP 'tarjeta-\K\d+' || echo "")
+        fi
+        
+        # 3. Si sigue vacío (por un merge crudo), buscamos cualquier número de tarjeta en las últimas ramas del historial
+        if [ -z "$NUMERO" ]; then
+          NUMERO=$(git log -10 --oneline | grep -oP 'tarjeta-\K\d+' | head -n 1 || echo "")
+        fi
+
+        # 4. Validamos que hayamos encontrado algo para que no falle el script
+        if [ -z "$NUMERO" ]; then
+          echo "No se detectó número de tarjeta en la rama ni en los commits recientes."
+          exit 1
+        fi
+
         echo "El número de tarjeta detectado es: $NUMERO"
         echo "trello_card_num=$NUMERO" >> $GITHUB_OUTPUT
     
