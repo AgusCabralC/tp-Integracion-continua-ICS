@@ -19,8 +19,6 @@ jobs:
       with:
         python-version: "3.10"
 
-    # Extraer numero de la tarjeta de Trello
-
     - name: Extraer numero de tarjeta de Trello
       id: extraer_tarjeta
       run: |
@@ -29,17 +27,14 @@ jobs:
         echo "El número de tarjeta detectado es: $NUMERO"
         echo "trello_card_num=$NUMERO" >> $GITHUB_OUTPUT
     
-      #Pasa de "para hacer" a "en progreso" al iniciar el pipeline
     - name: Mover tarjeta en Trello a EN PROGRESO
-      uses: nate-stacy/trello-action@v1.0.0
-      with:
-        trello-api-key: ${{ secrets.TRELLO_API_KEY }}
-        trello-token: ${{ secrets.TRELLO_TOKEN }}
-        trello-board-id: 'ZOn3bWSz' # El id del board de Trello
-        trello-list-id: '6a207672ad34d75b8b661482' 
-        trello-card-id: ${{ steps.extraer_tarjeta.outputs.trello_card_num }}
-
-    #CONTROL DE CALIDAD Y PRUEBAS
+      run: |
+        # 1. Buscamos el ID real de la tarjeta en el tablero usando su número secuencial (idShort)
+        CARD_ID=$(curl -s "https://api.trello.com/1/boards/6a207672ad34d75b8b66142b/cards?key=${{ secrets.TRELLO_API_KEY }}&token=${{ secrets.TRELLO_TOKEN }}" | jq -r ".[] | select(.idShort == ${{ steps.extraer_tarjeta.outputs.trello_card_num }}) | .id")
+        echo "ID real de la tarjeta encontrado: $CARD_ID"
+        
+        # 2. La movemos a la lista de En Progreso (terminada en 1482)
+        curl -s -X PUT -d "idList=6a207672ad34d75b8b661482" "https://api.trello.com/1/cards/$CARD_ID?key=${{ secrets.TRELLO_API_KEY }}&token=${{ secrets.TRELLO_TOKEN }}"
 
     - name: Instalar dependencias
       run: |
@@ -49,20 +44,17 @@ jobs:
 
     - name: Revisar estilo de codigo (Linteo con Flake8)
       run: |
-        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics 
 
     - name: Ejecutar pruebas unitarias
       run: |
         python -m unittest test_app.py
 
-    #Mover a "Listo" cuando el pipeline se ejecute correctamente
-
     - name: Mover tarjeta en Trello a LISTO
       if: success()
-      uses: nate-stacy/trello-action@v1.0.0
-      with:
-        trello-api-key: ${{ secrets.TRELLO_API_KEY }}
-        trello-token: ${{ secrets.TRELLO_TOKEN }}
-        trello-board-id: 'ZOn3bWSz' # El id del board de Trello 
-        trello-list-id: '6a207672ad34d75b8b661483'    
-        trello-card-id: ${{ steps.extraer_tarjeta.outputs.trello_card_num }}
+      run: |
+        # 1. Buscamos el ID real de la tarjeta usando su número secuencial
+        CARD_ID=$(curl -s "https://api.trello.com/1/boards/6a207672ad34d75b8b66142b/cards?key=${{ secrets.TRELLO_API_KEY }}&token=${{ secrets.TRELLO_TOKEN }}" | jq -r ".[] | select(.idShort == ${{ steps.extraer_tarjeta.outputs.trello_card_num }}) | .id")
+        
+        # 2. La movemos a la lista de Listo (terminada en 1483)
+        curl -s -X PUT -d "idList=6a207672ad34d75b8b661483" "https://api.trello.com/1/cards/$CARD_ID?key=${{ secrets.TRELLO_API_KEY }}&token=${{ secrets.TRELLO_TOKEN }}"
