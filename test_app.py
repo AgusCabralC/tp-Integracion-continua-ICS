@@ -1,22 +1,40 @@
 import unittest
-from app import servidor_tp  # Importamos nuestro servidor con el nuevo nombre
+from unittest.mock import patch
+import datetime
+import json
+from src.app import app
 
-class PruebasDeMiServidor(unittest.TestCase):
-
+class PruebasBotonNavidad(unittest.TestCase):
     def setUp(self):
-        # Creamos un navegador falso para testear las rutas sin prender el servidor real
-        self.navegadorprueba = servidor_tp.test_client()
+        # Levantamos el navegador falso para las pruebas de IC
+        self.navegador_prueba = app.test_client()
 
-    def test_verificar_conexion_exitosa(self):
-        # Entramos a la pagina principal y chequeamos que responda con un codigo 200 
-        respuestaweb = self.navegadorprueba.get('/')
-        self.assertEqual(respuestaweb.status_code, 200)
+    def test_caso_comun_no_es_navidad(self):
+        """Filtro: Verifica que un día común devuelva False"""
+        fecha_falsa = datetime.datetime(2026, 6, 15)
+        with patch('datetime.datetime') as mock_datetime:
+            mock_datetime.now.return_value = fecha_falsa
+            
+            respuesta = self.navegador_prueba.get('/es-navidad')
+            datos = json.loads(respuesta.data)
+            
+            self.assertEqual(respuesta.status_code, 200) # Filtro estructural
+            self.assertIsInstance(datos["es_navidad"], bool) # Filtro de tipo
+            self.assertFalse(datos["es_navidad"]) # Lógica de negocio
 
-    def test_verificar_contenido_del_texto(self):
-        # Valido que el texto en pantalla contenga las palabras clave que puse en app.py
-        respuestaweb = self.navegadorprueba.get('/')
-        texto_recibido = respuestaweb.data.decode('utf-8')
-        self.assertIn("Servidor de Gestión", texto_recibido)
+    def test_caso_borde_si_es_navidad(self):
+        """Filtro: Verifica que el 25/12 devuelva True obligatoriamente"""
+        fecha_navidad = datetime.datetime(2026, 12, 25)
+        with patch('datetime.datetime') as mock_datetime:
+            mock_datetime.now.return_value = fecha_navidad
+            
+            respuesta = self.navegador_prueba.get('/es-navidad')
+            datos = json.loads(respuesta.data)
+            
+            self.assertEqual(respuesta.status_code, 200)
+            self.assertTrue(datos["es_navidad"]) # Lógica de negocio
 
-if __name__ == '__main__':
-    unittest.main()
+    def test_rechazo_usuario_erroneo(self):
+        """Filtro: Comprueba que la app controle y rechace basura del usuario"""
+        respuesta = self.navegador_prueba.get('/es-navidad?hack=123')
+        self.assertEqual(respuesta.status_code, 400) # Valida el código de rechazo
