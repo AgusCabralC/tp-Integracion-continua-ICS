@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>¿Es Navidad?</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #e34935, #faa53d);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            color: white;
+        }
+        .container {
+            text-align: center;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+        }
+        h1 { font-size: 2.5rem; margin-bottom: 20px; }
+        button {
+            background-color: #ffffff;
+            color: #e34935;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(78, 1, 1, 0.3);
+        }
+        #resultado {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-top: 25px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.4);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>¿Es Navidad? 🎄</h1>
+        <button onclick="consultarServidor()">Consultar Estado</button>
+        <div id="resultado"></div>
+    </div>
+
+    <script>
+        function consultarServidor() {
+            // Golpeamos el endpoint que ya habiamos programado
+            fetch('/es-navidad')
+                .then(response => response.json())
+                .then(data => {
+                    const divResultado = document.getElementById('resultado');
+                    if(data.es_navidad) {
+                        divResultado.innerHTML = "¡SÍ! 🎁🎅✨";
+                    } else {
+                        divResultado.innerHTML = "No, todavía no. 😢";
+                    }
+                })
+                .catch(error => {
+                    document.getElementById('resultado').innerHTML = "Error al conectar.";
+                });
+        }
+    </script>
+</body>
+</html>
