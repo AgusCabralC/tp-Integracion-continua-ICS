@@ -15,7 +15,7 @@ def consultar_navidad():
         return jsonify({"error": "Peticion invalida. No se admiten parametros."}), 400
         
     hoy = datetime.datetime.now()  #    hoy = datetime.datetime(2026, 12, 25)
-    if hoy.month == 12 and hoy.day == 25:
+    if hoy.month == 11 and hoy.day == 25:
         es_navidad = True
     else:
         es_navidad = False
