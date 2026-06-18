@@ -14,7 +14,7 @@ def consultar_navidad():
     if request.args: #lo ocupo por si alguien intenta entrar con parametros /es-navidad?hack=123, el sistema lo rechaza
         return jsonify({"error": "Peticion invalida. No se admiten parametros."}), 400
         
-    hoy = datetime.datetime.now()
+    hoy = datetime.datetime.now()  #    hoy = datetime.datetime(2026, 12, 25)
     if hoy.month == 12 and hoy.day == 25:
         es_navidad = True
     else:
