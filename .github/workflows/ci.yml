@@ -2,13 +2,13 @@ name: Pipeline de IC
 
 on:
   push:
-    branches: [ "main", "master", "feature/*" ]
+    branches: [ "main", "feature/*" ]
   pull_request:
-    branches: [ "main", "master" ]
-
+    branches: [ "main" ]
+# Los triggers del pipeline se activan con pushes a main o cualquier rama de feature. Esto asegura que cada cambio relevante pase por el pipeline.
 jobs:
   build-and-test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest # Uso ubuntu para correr el pipeline
 
     steps:
     - name: Obtener el codigo fuente
@@ -22,13 +22,15 @@ jobs:
     - name: Extraer numero de tarjeta de Trello
       id: extraer_tarjeta
       run: |
-        # 1. Juntamos el nombre de la rama y los últimos 10 commits para buscar ahí
+        # Juntamos el nombre de la rama y los últimos 10 commits para buscar ahí
         TEXTO_BUSQUEDA="${{ github.ref_name }} $(git log -10 --oneline)"
         
         # ignora mayusculas, guiones o espacios entre tarjeta y el número
         NUMERO=$(echo "$TEXTO_BUSQUEDA" | grep -oPi 'tarjeta[- ]?\K\d+' | head -n 1 || echo "")
         
+        # grep busca la palabra "tarjeta" seguida de un número
         # Si no encuentra esa palabra, busca cualquier número aislado en los últimos commits
+        
         if [ -z "$NUMERO" ]; then
           NUMERO=$(echo "$TEXTO_BUSQUEDA" | grep -oP '\b\d+\b' | head -n 1 || echo "")
         fi
@@ -40,15 +42,18 @@ jobs:
         fi
 
         echo "El número de tarjeta detectado es: $NUMERO"
-        echo "trello_card_num=$NUMERO" >> $GITHUB_OUTPUT
-
+        echo "trello_card_num=$NUMERO" >> $GITHUB_OUTPUT  
+#Github_output guarda el numero de tarjeta para usarlo despues
     - name: Mover tarjeta en Trello a EN PROGRESO
       run: |
-        # 1. Buscamos el ID real de la tarjeta en el tablero usando su número secuencial (idShort)
+        
+        # Buscamos el ID real de la tarjeta en el tablero usando su número secuencial (idShort)
+        
         CARD_ID=$(curl -s "https://api.trello.com/1/boards/6a207672ad34d75b8b66142b/cards?key=${{ secrets.TRELLO_API_KEY }}&token=${{ secrets.TRELLO_TOKEN }}" | jq -r ".[] | select(.idShort == ${{ steps.extraer_tarjeta.outputs.trello_card_num }}) | .id")
         echo "ID real de la tarjeta encontrado: $CARD_ID"
         
-        # 2. La movemos a la lista de En Progreso (terminada en 1482)
+        
+        # La muevo a la lista de En Progreso 
         curl -s -X PUT -d "idList=6a207672ad34d75b8b661482" "https://api.trello.com/1/cards/$CARD_ID?key=${{ secrets.TRELLO_API_KEY }}&token=${{ secrets.TRELLO_TOKEN }}"
 
     - name: Instalar dependencias
@@ -57,7 +62,7 @@ jobs:
         pip install flake8
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
-    - name: Revisar estilo de codigo (Linteo con Flake8)
+    - name: Revisar estilo de codigo con flake8
       run: |
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics 
 
@@ -66,19 +71,28 @@ jobs:
         python -m unittest test_app.py
 
     - name: Mover tarjeta en Trello a LISTO
-      if: success() && (github.ref_name == 'main' || github.ref_name == 'master')
+      if: success() && (github.ref_name == 'main')
       run: |
-        # 1. Buscamos el ID real de la tarjeta usando su número secuencial
+        #Buscamos el ID real de la tarjeta usando su número secuencial
+        
         CARD_ID=$(curl -s "https://api.trello.com/1/boards/6a207672ad34d75b8b66142b/cards?key=${{ secrets.TRELLO_API_KEY }}&token=${{ secrets.TRELLO_TOKEN }}" | jq -r ".[] | select(.idShort == ${{ steps.extraer_tarjeta.outputs.trello_card_num }}) | .id")
         
-        # 2. La movemos a la lista de Listo
+        #curl preparo -s es para que no imprima nada y -X PUT es para actualizar la tarjeta, con -d le paso el nuevo id de lista que es el de listo
+        #La muevo a la lista de Listo
+        
         curl -s -X PUT -d "idList=6a207672ad34d75b8b661483" "https://api.trello.com/1/cards/$CARD_ID?key=${{ secrets.TRELLO_API_KEY }}&token=${{ secrets.TRELLO_TOKEN }}"
         
     - name: Mover tarjeta en Trello a FALLO TAREA
       if: failure()
       run: |
-        # 1. Buscamos el ID real de la tarjeta usando su número secuencial
+        # Busco el ID real de la tarjeta usando su número secuencial
         CARD_ID=$(curl -s "https://api.trello.com/1/boards/6a207672ad34d75b8b66142b/cards?key=${{ secrets.TRELLO_API_KEY }}&token=${{ secrets.TRELLO_TOKEN }}" | jq -r ".[] | select(.idShort == ${{ steps.extraer_tarjeta.outputs.trello_card_num }}) | .id")
         
-        # 2. La movemos a la lista de Fallo Tarea si algun paso anterior rompio el pipeline
+        # La movemos a la lista de Fallo Tarea si algun paso anterior rompio el pipeline
+        
+        
         curl -s -X PUT -d "idList=6a33294e16ed0368c7fb9843" "https://api.trello.com/1/cards/$CARD_ID?key=${{ secrets.TRELLO_API_KEY }}&token=${{ secrets.TRELLO_TOKEN }}"
+        
+        
+        #La API REST> de trello requiere el ID largo, por eso hago un GET, la API me da un JSON
+        #Bash no lee JSON asi que uso jq para filtro el JSON para tener el idShort que es el numero de la tarjeta

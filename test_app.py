@@ -6,21 +6,20 @@ from src.app import app
 
 class PruebasBotonNavidad(unittest.TestCase):
     def setUp(self):
-        # Levantamos el navegador falso para las pruebas de IC
-        self.navegador_prueba = app.test_client()
+        # Interfaz falsa para las pruebas de IC
+        self.navegador_prueba = app.test_client() #instancio el test_client de Flask para simular peticiones a la app
 
     def test_caso_comun_no_es_navidad(self):
         # Verifica que un día común devuelva False
         fecha_falsa = datetime.datetime(2026, 6, 15)
         with patch('datetime.datetime') as mock_datetime:
-            mock_datetime.now.return_value = fecha_falsa
-            
+            mock_datetime.now.return_value = fecha_falsa # Hago mocking con unittest por Github Actions
             respuesta = self.navegador_prueba.get('/es-navidad')
             datos = json.loads(respuesta.data)
             
-            self.assertEqual(respuesta.status_code, 200) # Filtro estructural
-            self.assertIsInstance(datos["es_navidad"], bool) # Filtro de tipo
-            self.assertFalse(datos["es_navidad"]) # Lógica de negocio
+            self.assertEqual(respuesta.status_code, 200) # Todo Ok online
+            self.assertIsInstance(datos["es_navidad"], bool) # Si mandaron un Boolean
+            self.assertFalse(datos["es_navidad"]) # Es correcto que devuelva False en un día común
 
     def test_caso_borde_si_es_navidad(self):
         #Verifica que el 25/12 devuelva True obligatoriamente

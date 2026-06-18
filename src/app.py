@@ -3,15 +3,15 @@ import datetime
 
 app = Flask(__name__)
 
-# NUEVA RUTA: Sirve la interfaz visual con el boton
+# Interfaz visual con el boton
 @app.route('/', methods=['GET'])
 def pagina_principal():
     return render_template('index.html')
 
-# NUESTRO ENDPOINT: Procesa la logica de fondo (intacta para la IC)
-@app.route('/es-navidad', methods=['GET'])
+# El ENDPOINT que devuelve si es navidad o no
+@app.route('/es-navidad', methods=['GET']) #Mapeo la url especifica
 def consultar_navidad():
-    if request.args:
+    if request.args: #lo ocupo por si alguien intenta entrar con parametros /es-navidad?hack=123, el sistema lo rechaza
         return jsonify({"error": "Peticion invalida. No se admiten parametros."}), 400
         
     hoy = datetime.datetime.now()
