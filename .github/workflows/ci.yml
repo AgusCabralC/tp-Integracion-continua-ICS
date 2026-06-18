@@ -25,7 +25,6 @@ jobs:
         # 1. Juntamos el nombre de la rama y los últimos 10 commits para buscar ahí
         TEXTO_BUSQUEDA="${{ github.ref_name }} $(git log -10 --oneline)"
         
-        
         # ignora mayusculas, guiones o espacios entre tarjeta y el número
         NUMERO=$(echo "$TEXTO_BUSQUEDA" | grep -oPi 'tarjeta[- ]?\K\d+' | head -n 1 || echo "")
         
@@ -74,3 +73,12 @@ jobs:
         
         # 2. La movemos a la lista de Listo
         curl -s -X PUT -d "idList=6a207672ad34d75b8b661483" "https://api.trello.com/1/cards/$CARD_ID?key=${{ secrets.TRELLO_API_KEY }}&token=${{ secrets.TRELLO_TOKEN }}"
+        
+    - name: Mover tarjeta en Trello a FALLO TAREA
+      if: failure()
+      run: |
+        # 1. Buscamos el ID real de la tarjeta usando su número secuencial
+        CARD_ID=$(curl -s "https://api.trello.com/1/boards/6a207672ad34d75b8b66142b/cards?key=${{ secrets.TRELLO_API_KEY }}&token=${{ secrets.TRELLO_TOKEN }}" | jq -r ".[] | select(.idShort == ${{ steps.extraer_tarjeta.outputs.trello_card_num }}) | .id")
+        
+        # 2. La movemos a la lista de Fallo Tarea si algun paso anterior rompio el pipeline
+        curl -s -X PUT -d "idList=6a33294e16ed0368c7fb9843" "https://api.trello.com/1/cards/$CARD_ID?key=${{ secrets.TRELLO_API_KEY }}&token=${{ secrets.TRELLO_TOKEN }}"
